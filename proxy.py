@@ -14,7 +14,7 @@ pAsServerSocket.bind(("", port))
 pAsServerSocket.listen(7)
 
 while True:
-    print("here\n")
+    print("Proxy Server Ready\n")
     conn, clientAddr = pAsServerSocket.accept()
     print "Client address is ", clientAddr
 
@@ -38,6 +38,16 @@ while True:
 
     # find end of web server
     first_slash = host_name.find("/")
+
+    if (request.split()[1] == "http://127.0.0.1:20000/1.txt"):
+        file_name = host_name[first_slash+1:]
+        file_name = "/" + file_name
+        print "file name is ", file_name
+        words = request.split(" ")
+        print "words ", words
+        words[1] = file_name
+        request = " ".join(words)
+
     if first_slash == -1:
         first_slash = len(host_name)
     if (port_pos==-1 or first_slash < port_pos): 
@@ -59,6 +69,7 @@ while True:
         while 1:
             # receive data from web server
             data = pAsClientSocket.recv(1024)
+            print "data : ", data   
 
             if (len(data) > 0):
                 conn.send(data) # send to browser/client
