@@ -5,8 +5,7 @@ import time
 from thread import *
 
 port = 12345
-buffer_size = 1024*1024
-small_buffer_size = 1024
+buffer_size = 1024
 
 # Create TCP socket
 pAsServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,27 +19,32 @@ pAsServerSocket.bind(("", port))
 pAsServerSocket.listen(70)
 
 
-def retrieve_from_server(request):
+def retrieve_from_server(request, file_name, port_no, host_name):
     try:
         fobj1 = open("files_stored","a+")
         stored_list = fobj1.readlines()
+        print stored_list, file_name
         stored_list = [line.strip("\n") for line in stored_list if line.strip() != '']
         fobj1.close()
         fobj1 = open("files_stored","w")
-        stored_list.remove(file_name)
-        os.remove(("."+file_name).strip("\n"))
+        try:
+            stored_list.remove(file_name)
+            os.remove(("."+file_name).strip("\n"))
+        except:
+            print "loda" 
         stored_list.append(file_name)
         print "FILES in cache are :", stored_list
         stored_list = [line for line in stored_list if line.strip() != '']
         fobj1.write("\n".join(stored_list))
         fobj1.close()
         fobj = open("." + file_name, "w")               # Sending ./ + filename
+        print "prt"
         pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
-        pAsClientSocket.connect(('', port_no))
+        pAsClientSocket.connect((host_name, port_no))
         pAsClientSocket.sendall(request)
         while 1:
             # receive data from web server
-            data = pAsClientSocket.recv(small_buffer_size)
+            data = pAsClientSocket.recv(buffer_size)
             print "data : ", data   
             fobj.write(data)
 
@@ -121,7 +125,7 @@ def check_cache(file_name, host_name, port_no, request):
 
             # Send conditional get to main server
             pAsClientMSocket.sendall(request)
-            data = pAsClientMSocket.recv(small_buffer_size)
+            data = pAsClientMSocket.recv(buffer_size)
             print "data is ", data  
 
             # File no modified in the server side, then retrieve the file from the cache
@@ -136,13 +140,13 @@ def check_cache(file_name, host_name, port_no, request):
             # File modified in the server, get the file from the server
             else:
                 print "File modifed ... Retrieving file from server"
-                retrieve_from_server(request)
+                retrieve_from_server(request, file_name, port_no, host_name)
         except:
             print "Error connecting to server"
     else:   
         # If file not present in cache retrieve it from server
         print "File not present in Cache ... Getting file from server"
-        retrieve_from_server(request)
+        retrieve_from_server(request, file_name, port_no, host_name)
 
 while True:
     print "*****************************Proxy Server Ready*************************************\n"
