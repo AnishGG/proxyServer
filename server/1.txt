@@ -2,4 +2,4 @@ Hello world.
 
 Lorem ipsum.
 
-File 1
+Modified File 1

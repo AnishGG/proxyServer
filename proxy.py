@@ -1,5 +1,6 @@
 import socket
 import os
+import re
 
 port = 12345
 
@@ -40,7 +41,9 @@ while True:
 	# find end of web server
 	first_slash = host_name.find("/")
 
-	if (request.split()[1] == "http://127.0.0.1:20000/1.txt"):
+	line = "http://127.0.0.1:20000"
+	matchobj = re.match(line, request.split()[1])
+	if (matchobj):
 		file_name = host_name[first_slash+1:]
 		file_name = "/" + file_name
 		print "file name is ", file_name
@@ -62,6 +65,7 @@ while True:
 	print host_name, port_no
 	
 	if os.path.isfile(file_name[1:]):
+		print "File present in cache"
 		# If the file is already present in the cache
 		try:
 			pAsClientMSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
@@ -71,7 +75,7 @@ while True:
 			fobj.close()
 			prevdate = ""
 			for line in line_list:
-				if line.split(" ")[0] == "Date:":
+				if line.split(" ")[0] == "Last-Modified:":
 					prevdate = " ".join(line.split(" ")[1:])
 			prevdate = prevdate + "\n"
 			request_list = request.split("\n")
@@ -84,12 +88,12 @@ while True:
 					tmplist = modified_header.split()
 					tmp = tmplist[0] + " " + tmplist[1].strip(",") + " " + tmplist[3] + "  " + tmplist[2] + " " + tmplist[5] + " " + tmplist[6] + " " + tmplist[4]
 					modified_header = tmp
+					print "modified_header", modified_header
 					request_list.insert(i+1, modified_header)
-
 			request = "\n".join(request_list)
 			pAsClientMSocket.sendall(request)
 			data = pAsClientMSocket.recv(1024)
-
+			print "data is ", data	
 			if data.split()[1] == "304":
 				# File no modified in the server side, then retrieve the file from the cache
 				print "Sending file from cache"
@@ -100,11 +104,26 @@ while True:
 			else:
 				# File modified in the server, get the file from the server
 				try:
-					fobj = open("." + file_name, "w")                                               # Sending ./ + filename
+					print "File modifed ... Retrieving file from server"
+					fobj1 = open("files_stored","a+")
+					stored_list = fobj1.readlines()
+					stored_list = [line.strip("\n") for line in stored_list if line.strip() != '']
+					fobj1.close()
+					fobj1 = open("files_stored","w")
+					print "stored_list", stored_list
+					print "file_name", file_name
+					stored_list.remove(file_name)
+					print "here"
+					os.remove(("."+file_name).strip("\n"))
+					stored_list.append(file_name)
+					print "FILES in cache are :", stored_list
+					stored_list = [line for line in stored_list if line.strip() != '']
+					fobj1.write("\n".join(stored_list))
+					fobj1.close()
+					fobj = open("." + file_name, "w")				# Sending ./ + filename
 					pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
 					pAsClientSocket.connect(('', port_no))
 					pAsClientSocket.sendall(request)
-					print "File modifed ... sending file from server"
 					while 1:
 						# receive data from web server
 						data = pAsClientSocket.recv(1024)
@@ -126,21 +145,40 @@ while True:
 
 	else:   
 		# If file not present in cache retrieve it from server
-		try:
-			fobj = open("." + file_name, "w")                                               # Sending ./ + filename
-			pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
-			pAsClientSocket.connect(('', port_no))
-			pAsClientSocket.sendall(request)
-			while 1:
-				# receive data from web server
-				data = pAsClientSocket.recv(1024)
-				print "data : ", data   
-				fobj.write(data)
+		# try:
+		print "File not present in Cache ... Getting file from server"
+		fobj1 = open("files_stored","a+")
+		stored_list = fobj1.readlines()
+		stored_list = [line for line in stored_list if line.strip() != '']
+		fobj1.close()
+		fobj1 = open("files_stored","w")
+		if len(stored_list) >= 3:
+			print "File to be removed from cache", stored_list[0]
+			print "here ", "."+stored_list[0]
+			os.remove(("."+stored_list[0]).strip("\n"))
+			print "here"
+			stored_list.pop(0)
 
-				if (len(data) > 0):
-					conn.send(data) # send to browser/client
-				else:
-					fobj.close()
-					break
-		except:
-			print "error connecting to the server"
+		print "file_name is ", file_name
+		stored_list.append(file_name)
+		print "FILES in cache are :", stored_list
+		stored_list = [line for line in stored_list if line.strip() != '']
+		fobj1.write("\n".join(stored_list))
+		fobj1.close()
+		fobj = open("." + file_name, "w")                                               # Sending ./ + filename
+		pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
+		pAsClientSocket.connect(('', port_no))
+		pAsClientSocket.sendall(request)
+		while 1:
+			# receive data from web server
+			data = pAsClientSocket.recv(1024)
+			print "data : ", data   
+			fobj.write(data)
+
+			if (len(data) > 0):
+				conn.send(data) # send to browser/client
+			else:
+				fobj.close()
+				break
+		# except:
+				# print "error connecting to the server"
