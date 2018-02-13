@@ -1,4 +1,5 @@
 import socket
+import os
 
 port = 12345
 
@@ -61,19 +62,31 @@ while True:
 
     print host_name, port_no
     
-    try:
-        pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
-        pAsClientSocket.connect(('', port_no))
-        pAsClientSocket.sendall(request)
-            
-        while 1:
-            # receive data from web server
-            data = pAsClientSocket.recv(1024)
-            print "data : ", data   
+    if os.path.isfile(file_name[1:]):
+    	# If the file is already present in the cache
+    	print "Sending file from cache"
+    	fobj = open("." + file_name, "r")
+    	line_list = fobj.readlines()
+    	for line in line_list:
+    		conn.send(line)
 
-            if (len(data) > 0):
-                conn.send(data) # send to browser/client
-            else:
-                break
-    except:
-        print "error connecting to the server"
+    else:
+    	# If file not present in cache retrieve it from server
+    	try:
+    		fobj = open("." + file_name, "w")												# Sending ./ + filename
+        	pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
+        	pAsClientSocket.connect(('', port_no))
+        	pAsClientSocket.sendall(request)
+        	while 1:
+        	    # receive data from web server
+        	    data = pAsClientSocket.recv(1024)
+        	    print "data : ", data   
+        	    fobj.write(data)
+
+        	    if (len(data) > 0):
+        	        conn.send(data) # send to browser/client
+        	    else:
+        	    	fobj.close()
+        	        break
+    	except:
+    	    print "error connecting to the server"
