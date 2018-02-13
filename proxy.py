@@ -53,6 +53,7 @@ while True:
 
 	if first_slash == -1:
 		first_slash = len(host_name)
+	
 	if (port_pos==-1 or first_slash < port_pos): 
 		# default port 
 		port_no = 80 
@@ -63,19 +64,18 @@ while True:
 		host_name = host_name[:port_pos]
 
 	print host_name, port_no
-	
+
+	# File already present in cache	
 	if os.path.isfile(file_name[1:]):
 		print "File present in cache"
-		# If the file is already present in the cache
 		try:
 			pAsClientMSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
 			pAsClientMSocket.connect(('', port_no)) 
-			fobj = open("." + file_name, "r")
-			line_list = fobj.readlines()
-			fobj.close()
+			# Get the data, time of file
 			prevdate = time.ctime(os.path.getmtime("."+file_name))
 			request_list = request.split("\n")
 
+			# Adding the If-Modified-Since header
 			for i in range(len(request_list)):
 				if request_list[i] == "\r" or request_list[i] == "":
 					continue
@@ -88,18 +88,22 @@ while True:
 					modified_header = tmp
 					request_list.insert(i+1, modified_header)
 			request = "\n".join(request_list)
+
+			# Send conditional get to main server
 			pAsClientMSocket.sendall(request)
 			data = pAsClientMSocket.recv(1024)
 			print "data is ", data	
+
+			# File no modified in the server side, then retrieve the file from the cache
 			if data.split()[1] == "304":
-				# File no modified in the server side, then retrieve the file from the cache
 				print "Sending file from cache"
 				fobj = open("." + file_name, "r")
 				line_list = fobj.readlines()
 				for line in line_list:
 					conn.send(line)
+					
+			# File modified in the server, get the file from the server
 			else:
-				# File modified in the server, get the file from the server
 				try:
 					print "File modifed ... Retrieving file from server"
 					fobj1 = open("files_stored","a+")
