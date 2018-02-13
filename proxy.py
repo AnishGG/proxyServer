@@ -1,6 +1,7 @@
 import socket
 import os
 import re
+import time
 
 port = 12345
 
@@ -73,21 +74,28 @@ while True:
 			fobj = open("." + file_name, "r")
 			line_list = fobj.readlines()
 			fobj.close()
-			prevdate = ""
-			for line in line_list:
-				if line.split(" ")[0] == "Last-Modified:":
-					prevdate = " ".join(line.split(" ")[1:])
-			prevdate = prevdate + "\n"
+			# prevdate = ""
+			# for line in line_list:
+				# if line.split(" ")[0] == "Last-Modified:":
+					# prevdate = " ".join(line.split(" ")[1:])
+			# prevdate = prevdate + "\n"
+			# print "prevdate", prevdate
+			print "file_name is", file_name
+			prevdate = time.ctime(os.path.getmtime("."+file_name))
+			print "prevdate", prevdate
 			request_list = request.split("\n")
+
 			for i in range(len(request_list)):
 				if request_list[i] == "\r" or request_list[i] == "":
 					continue
 				if request_list[i].split()[0] == 'Host:':
+					print "prevdate is ", prevdate
 					modified_header = "If-Modified-Since: " + prevdate
-					modified_header = modified_header.strip("\n")
-					tmplist = modified_header.split()
-					tmp = tmplist[0] + " " + tmplist[1].strip(",") + " " + tmplist[3] + "  " + tmplist[2] + " " + tmplist[5] + " " + tmplist[6] + " " + tmplist[4]
-					modified_header = tmp
+					# modified_header = modified_header.strip("\n")
+					# tmplist = modified_header.split()
+					# tmp = tmplist[0] + " " + tmplist[1].strip(",") + " " + tmplist[3] + " " + tmplist[2] + " " + tmplist[5] + " " + tmplist[4]
+					# modified_header = tmp
+
 					print "modified_header", modified_header
 					request_list.insert(i+1, modified_header)
 			request = "\n".join(request_list)
