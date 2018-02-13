@@ -64,13 +64,54 @@ while True:
     
     if os.path.isfile(file_name[1:]):
     	# If the file is already present in the cache
-    	print "Sending file from cache"
-    	fobj = open("." + file_name, "r")
-    	line_list = fobj.readlines()
-    	for line in line_list:
-    		conn.send(line)
+    	try:
+			pAsClientMSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
+			pAsClientMSocket.connect(('', port_no))	
+			fobj = open("." + file_name, "r")
+			line_list = fobj.readlines()
+			fobj.close()
+			prevdate = ""
+			print "line_list", line_list
+			for line in line_list:
+				print "line", line
+				if line.split(" ")[0] == "Date:":
+					prevdate = " ".join(line.split(" ")[1:])
+			prevdate = prevdate + "\n"
+			print "prevdate :", prevdate
+			request_list = request.split("\n")
+			print "request list", request_list
+			for i in range(len(request_list)):
+				if request_list[i] == "\r" or request_list[i] == "":
+					continue
+				print "request_list[i]", request_list[i]
+				if request_list[i].split()[0] == 'Host:':
+					print "HOST DETECTED!"
+					modified_header = "If-Modified-Since: " + prevdate
+					modified_header = modified_header.strip("\n")
+					tmplist = modified_header.split()
+					tmp = tmplist[0] + " " + tmplist[1].strip(",") + " " + tmplist[3] + "  " + tmplist[2] + " " + tmplist[5] + " " + tmplist[6] + " " + tmplist[4]
+					modified_header = tmp
+					print "modified_header is ", modified_header
+					request_list.insert(i+1, modified_header)
+			print "new request_list is ", request_list
 
-    else:
+			request = "\n".join(request_list)
+			print "new request is ", request
+			pAsClientMSocket.sendall(request)
+			data = pAsClientMSocket.recv(1024)
+			if data.split()[1] == "304":
+				print "Sending file from cache"
+				fobj = open("." + file_name, "r")
+				line_list = fobj.readlines()
+				for line in line_list:
+				    conn.send(line)
+
+        except:
+            print "Error connecting to server"
+    	
+
+
+    else:	
     	# If file not present in cache retrieve it from server
     	try:
     		fobj = open("." + file_name, "w")												# Sending ./ + filename
