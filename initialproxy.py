@@ -89,9 +89,6 @@ while True:
 					print "HOST DETECTED!"
 					modified_header = "If-Modified-Since: " + prevdate
 					modified_header = modified_header.strip("\n")
-					# tmplist = modified_header.split()
-					# tmp = tmplist[0] + " " + tmplist[1].strip(",") + " " + tmplist[3] + "  " + tmplist[2] + " " + tmplist[5] + " " + tmplist[6] + " " + tmplist[4]
-					# modified_header = tmp
 					print "modified_header is ", modified_header
 					request_list.insert(i+1, modified_header)
 			print "new request_list is ", request_list

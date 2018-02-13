@@ -23,7 +23,6 @@ while True:
 
 	# get the request from browser
 	request = conn.recv(1024*1024)
-	# print "reveived request is ", request
 
 	# Get url of the website requested
 	print "request is ", request
@@ -74,29 +73,19 @@ while True:
 			fobj = open("." + file_name, "r")
 			line_list = fobj.readlines()
 			fobj.close()
-			# prevdate = ""
-			# for line in line_list:
-				# if line.split(" ")[0] == "Last-Modified:":
-					# prevdate = " ".join(line.split(" ")[1:])
-			# prevdate = prevdate + "\n"
-			# print "prevdate", prevdate
-			print "file_name is", file_name
 			prevdate = time.ctime(os.path.getmtime("."+file_name))
-			print "prevdate", prevdate
 			request_list = request.split("\n")
 
 			for i in range(len(request_list)):
 				if request_list[i] == "\r" or request_list[i] == "":
 					continue
 				if request_list[i].split()[0] == 'Host:':
-					print "prevdate is ", prevdate
 					modified_header = "If-Modified-Since: " + prevdate
-					# modified_header = modified_header.strip("\n")
-					# tmplist = modified_header.split()
-					# tmp = tmplist[0] + " " + tmplist[1].strip(",") + " " + tmplist[3] + " " + tmplist[2] + " " + tmplist[5] + " " + tmplist[4]
-					# modified_header = tmp
-
-					print "modified_header", modified_header
+					modified_header = modified_header.strip("\n")
+					tmplist = modified_header.split()
+					print tmplist
+					tmp = tmplist[0] + " " + tmplist[1] + " " + tmplist[2] + " " + tmplist[3] + " " + tmplist[4] + " GMT " + tmplist[5]
+					modified_header = tmp
 					request_list.insert(i+1, modified_header)
 			request = "\n".join(request_list)
 			pAsClientMSocket.sendall(request)
@@ -118,10 +107,7 @@ while True:
 					stored_list = [line.strip("\n") for line in stored_list if line.strip() != '']
 					fobj1.close()
 					fobj1 = open("files_stored","w")
-					print "stored_list", stored_list
-					print "file_name", file_name
 					stored_list.remove(file_name)
-					print "here"
 					os.remove(("."+file_name).strip("\n"))
 					stored_list.append(file_name)
 					print "FILES in cache are :", stored_list
@@ -153,40 +139,38 @@ while True:
 
 	else:   
 		# If file not present in cache retrieve it from server
-		# try:
-		print "File not present in Cache ... Getting file from server"
-		fobj1 = open("files_stored","a+")
-		stored_list = fobj1.readlines()
-		stored_list = [line for line in stored_list if line.strip() != '']
-		fobj1.close()
-		fobj1 = open("files_stored","w")
-		if len(stored_list) >= 3:
-			print "File to be removed from cache", stored_list[0]
-			print "here ", "."+stored_list[0]
-			os.remove(("."+stored_list[0]).strip("\n"))
-			print "here"
-			stored_list.pop(0)
+		try:
+			print "File not present in Cache ... Getting file from server"
+			fobj1 = open("files_stored","a+")
+			stored_list = fobj1.readlines()
+			stored_list = [line for line in stored_list if line.strip() != '']
+			fobj1.close()
+			fobj1 = open("files_stored","w")
+			if len(stored_list) >= 3:
+				print "File to be removed from cache", stored_list[0]
+				os.remove(("."+stored_list[0]).strip("\n"))
+				stored_list.pop(0)
 
-		print "file_name is ", file_name
-		stored_list.append(file_name)
-		print "FILES in cache are :", stored_list
-		stored_list = [line for line in stored_list if line.strip() != '']
-		fobj1.write("\n".join(stored_list))
-		fobj1.close()
-		fobj = open("." + file_name, "w")                                               # Sending ./ + filename
-		pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
-		pAsClientSocket.connect(('', port_no))
-		pAsClientSocket.sendall(request)
-		while 1:
-			# receive data from web server
-			data = pAsClientSocket.recv(1024)
-			print "data : ", data   
-			fobj.write(data)
+			print "file_name is ", file_name
+			stored_list.append(file_name)
+			print "FILES in cache are :", stored_list
+			stored_list = [line for line in stored_list if line.strip() != '']
+			fobj1.write("\n".join(stored_list))
+			fobj1.close()
+			fobj = open("." + file_name, "w")                                               # Sending ./ + filename
+			pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
+			pAsClientSocket.connect(('', port_no))
+			pAsClientSocket.sendall(request)
+			while 1:
+				# receive data from web server
+				data = pAsClientSocket.recv(1024)
+				print "data : ", data   
+				fobj.write(data)
 
-			if (len(data) > 0):
-				conn.send(data) # send to browser/client
-			else:
-				fobj.close()
-				break
-		# except:
-				# print "error connecting to the server"
+				if (len(data) > 0):
+					conn.send(data) # send to browser/client
+				else:
+					fobj.close()
+					break
+		except:
+				print "error connecting to the server"
