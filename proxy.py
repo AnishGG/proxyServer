@@ -51,18 +51,25 @@ def retrieve_from_server(request, file_name, port_no, host_name):
 				liner = line.split()
 				if (len(liner)>=2 and liner[0] == "Cache-control:" and liner[1] == "no-cache"):
 					flag = -1
+				if (len(liner)>=2 and liner[0] == "HTTP/1.0" and liner[1] == "404"):
+					print "flag = -2"
+					flag = -2
 
 			fobj.write(data)
-
+			print "flag is ", flag
+			# if flag == -2:
+				# conn.send("File not found on server")
+				# break
 			if (len(data) > 0):
 				conn.send(data) # send to browser/client
 			else:
-				if flag == -1:
+				if flag == -1 or flag == -2:
 					os.remove("."+file_name.strip("\n"))
 					stored_list.remove(file_name)
 				fobj.close()
 				fobj1.write("\n".join(stored_list))
 				fobj1.close()
+				conn.close()
 				break
 	except:
 		print "error connecting to the server"
