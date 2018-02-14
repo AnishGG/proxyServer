@@ -1,0 +1,10 @@
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/2.7.12
+Date: Wed, 14 Feb 2018 23:08:14 GMT
+Content-type: text/plain
+Content-Length: 62
+Last-Modified: Wed, 14 Feb 2018 09:41:08 GMT
+Cache-control: must-revalidate
+
+This is a second sample file
+Used for testing proxy server :)
