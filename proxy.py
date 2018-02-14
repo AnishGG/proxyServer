@@ -5,7 +5,7 @@ import time
 from thread import *
 
 port = 12345
-buffer_size = 1024
+buffer_size = 1024*1024
 
 # Create TCP socket
 pAsServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -36,7 +36,6 @@ def retrieve_from_server(request, file_name, port_no, host_name):
 		print "FILES in cache are :", stored_list
 		stored_list = [line for line in stored_list if line.strip() != '']
 		fobj = open("." + file_name, "w")               # Sending ./ + filename
-		print "prt"
 		pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
 		pAsClientSocket.connect((host_name, port_no))
 		pAsClientSocket.sendall(request)
@@ -44,7 +43,7 @@ def retrieve_from_server(request, file_name, port_no, host_name):
 		while 1:
 			# receive data from web server
 			data = pAsClientSocket.recv(buffer_size)
-			print "data : ", data   
+			# print "data : ", data   
 			cache_control_list = data.split("\n")
 			# Detect of cache-control is no-cache
 			for line in cache_control_list:
@@ -56,7 +55,6 @@ def retrieve_from_server(request, file_name, port_no, host_name):
 					flag = -2
 
 			fobj.write(data)
-			print "flag is ", flag
 			# if flag == -2:
 				# conn.send("File not found on server")
 				# break
@@ -153,6 +151,7 @@ def check_cache(file_name, host_name, port_no, request):
 				line_list = fobj.readlines()
 				for line in line_list:
 					conn.send(line)
+				conn.close()
 				print "File sent"
 					
 			# File modified in the server, get the file from the server
