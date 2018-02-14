@@ -15,15 +15,13 @@ pAsServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # bind
 pAsServerSocket.bind(("", port))
-
 pAsServerSocket.listen(70)
-
 
 def retrieve_from_server(request, file_name, port_no, host_name):
 	try:
 		fobj1 = open("files_stored","a+")
 		stored_list = fobj1.readlines()
-		print stored_list, file_name
+                print "stored_list: ", stored_list, "file_name: ", file_name
 		stored_list = [line.strip("\n") for line in stored_list if line.strip() != '']
 		fobj1.close()
 		fobj1 = open("files_stored","w")
@@ -39,29 +37,25 @@ def retrieve_from_server(request, file_name, port_no, host_name):
 		pAsClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)   
 		pAsClientSocket.connect((host_name, port_no))
 		pAsClientSocket.sendall(request)
-		flag = 1
+		no_cache = 0
+                file_not_found = 0
 		while 1:
 			# receive data from web server
 			data = pAsClientSocket.recv(buffer_size)
-			# print "data : ", data   
 			cache_control_list = data.split("\n")
 			# Detect of cache-control is no-cache
 			for line in cache_control_list:
 				liner = line.split()
 				if (len(liner)>=2 and liner[0] == "Cache-control:" and liner[1] == "no-cache"):
-					flag = -1
+					no_cache = 1
 				if (len(liner)>=2 and liner[0] == "HTTP/1.0" and liner[1] == "404"):
-					print "flag = -2"
-					flag = -2
+					file_not_found = 1
 
 			fobj.write(data)
-			# if flag == -2:
-				# conn.send("File not found on server")
-				# break
 			if (len(data) > 0):
 				conn.send(data) # send to browser/client
 			else:
-				if flag == -1 or flag == -2:
+				if no_cache == 1 or file_not_found == 1:
 					os.remove("."+file_name.strip("\n"))
 					stored_list.remove(file_name)
 				fobj.close()
@@ -87,13 +81,11 @@ def conn_string(conn, clientAddr, request):
 
 	# find end of web server
 	first_slash = host_name.find("/")
-
 	file_name = ''
 
 	# getting the path for the url
 	file_name = host_name[first_slash+1:]
 	file_name = "/" + file_name
-	print "file name is ", file_name
 	words = request.split(" ")
 	words[1] = file_name
 	request = " ".join(words)
@@ -133,7 +125,6 @@ def check_cache(file_name, host_name, port_no, request):
 					modified_header = "If-Modified-Since: " + prevdate
 					modified_header = modified_header.strip("\n")
 					tmplist = modified_header.split()
-					print 'anish', tmplist
 					tmp = tmplist[0] + " " + tmplist[1] + " " + tmplist[2] + " " + tmplist[3] + " " + tmplist[4] + " GMT " + tmplist[5]
 					modified_header = tmp
 					request_list.insert(i+1, modified_header)
