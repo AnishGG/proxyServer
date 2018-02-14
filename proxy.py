@@ -17,11 +17,11 @@ pAsServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 pAsServerSocket.bind(("", port))
 pAsServerSocket.listen(70)
 
-def retrieve_from_server(request, file_name, port_no, host_name):
+def retrieve_from_server(conn, request, file_name, port_no, host_name):
     try:
         fobj1 = open("files_stored","a+")
         stored_list = fobj1.readlines()
-                print "stored_list: ", stored_list, "file_name: ", file_name
+        print "stored_list: ", stored_list, "file_name: ", file_name
         stored_list = [line.strip("\n") for line in stored_list if line.strip() != '']
         fobj1.close()
         fobj1 = open("files_stored","w")
@@ -38,7 +38,7 @@ def retrieve_from_server(request, file_name, port_no, host_name):
         pAsClientSocket.connect((host_name, port_no))
         pAsClientSocket.sendall(request)
         no_cache = 0            # means assume cache is present for that file
-                file_not_found = 0      # means assume file is found in the server
+        file_not_found = 0      # means assume file is found in the server
         while 1:
             # receive data from web server
             data = pAsClientSocket.recv(buffer_size)
@@ -61,7 +61,7 @@ def retrieve_from_server(request, file_name, port_no, host_name):
                 fobj.close()
                 fobj1.write("\n".join(stored_list))
                 fobj1.close()
-                conn.close()
+                #conn.close()
                 break
     except:
         print "error connecting to the server"
@@ -104,9 +104,9 @@ def conn_string(conn, clientAddr, request):
         host_name = host_name[:port_pos]
 
     print host_name, port_no
-    check_cache(file_name, host_name, port_no, request)
+    check_cache(conn, file_name, host_name, port_no, request)
 
-def check_cache(file_name, host_name, port_no, request):
+def check_cache(conn, file_name, host_name, port_no, request):
     # File already present in cache 
     if os.path.isfile(file_name[1:]):
         print "File present in cache"
@@ -133,7 +133,7 @@ def check_cache(file_name, host_name, port_no, request):
             # Send conditional get to main server
             pAsClientMSocket.sendall(request)
             data = pAsClientMSocket.recv(buffer_size)
-            print "data is ", data  
+            #print "data is ", data  
 
             # File no modified in the server side, then retrieve the file from the cache
             if data.split()[1] == "304":
@@ -148,13 +148,13 @@ def check_cache(file_name, host_name, port_no, request):
             # File modified in the server, get the file from the server
             else:
                 print "File modifed ... Retrieving file from server"
-                retrieve_from_server(request, file_name, port_no, host_name)
+                retrieve_from_server(conn, request, file_name, port_no, host_name)
         except:
             print "Error connecting to server"
     else:   
         # If file not present in cache retrieve it from server
         print "File not present in Cache ... Getting file from server"
-        retrieve_from_server(request, file_name, port_no, host_name)
+        retrieve_from_server(conn, request, file_name, port_no, host_name)
 
 while True:
     print "*****************************Proxy Server Ready*************************************\n"
